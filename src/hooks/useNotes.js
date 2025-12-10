@@ -30,7 +30,7 @@ export function useNotes() {
       if (!response.ok) throw new Error("Failed to fetch notes");
       const data = await response.json();
       const transformedNotes = Array.isArray(data)
-        ? data.map(transformNote)
+        ? data.map(transformNote).filter((note) => note.content) // 過濾掉空白備註
         : [];
       setNotes(transformedNotes);
     } catch (err) {
@@ -44,6 +44,12 @@ export function useNotes() {
 
   // Add a new note
   const addNote = useCallback(async (noteData) => {
+    // 驗證必填欄位
+    if (!noteData.content || !noteData.content.trim()) {
+      setError("備註內容不能為空");
+      return false;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
@@ -51,11 +57,11 @@ export function useNotes() {
       // 轉換為 API 格式: { name, note, tripId }
       const apiData = {
         name: noteData.name || "",
-        note: noteData.content,
+        note: noteData.content.trim(),
         tripId: noteData.dayId || "",
       };
 
-      const response = await fetch(API_URL, {
+      await fetch(API_URL, {
         method: "POST",
         mode: "no-cors",
         headers: {
@@ -68,14 +74,14 @@ export function useNotes() {
       const newNote = {
         id: Date.now().toString(),
         name: noteData.name || "",
-        content: noteData.content,
+        content: noteData.content.trim(),
         dayId: noteData.dayId || null,
         timestamp: Date.now(),
       };
       setNotes((prev) => [newNote, ...prev]);
 
       // Refresh after a short delay to sync with server
-      setTimeout(fetchNotes, 1500);
+      setTimeout(fetchNotes, 2000);
 
       return true;
     } catch (err) {
@@ -89,10 +95,16 @@ export function useNotes() {
 
   // Delete a note (根據 timestamp 刪除)
   const deleteNote = useCallback(async (noteId) => {
+    if (!noteId) return false;
+
     try {
       setSubmitting(true);
       setError(null);
 
+      // 先從本地移除
+      setNotes((prev) => prev.filter((note) => note.id !== noteId));
+
+      // 發送刪除請求到 API
       await fetch(API_URL, {
         method: "POST",
         mode: "no-cors",
@@ -105,16 +117,15 @@ export function useNotes() {
         }),
       });
 
-      // Optimistically update
-      setNotes((prev) => prev.filter((note) => note.id !== noteId));
-
       // Refresh after a short delay
-      setTimeout(fetchNotes, 1500);
+      setTimeout(fetchNotes, 2000);
 
       return true;
     } catch (err) {
       console.error("Error deleting note:", err);
       setError(err.message);
+      // 如果失敗，重新載入資料
+      fetchNotes();
       return false;
     } finally {
       setSubmitting(false);

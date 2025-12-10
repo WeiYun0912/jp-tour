@@ -10,6 +10,7 @@ import {
   FaWalking,
   FaClock,
   FaInfoCircle,
+  FaMapMarked,
 } from "react-icons/fa";
 import { MdAttractions, MdPets } from "react-icons/md";
 import { BsBuildingFill } from "react-icons/bs";
@@ -33,6 +34,12 @@ const typeColors = {
   shopping: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
+// 開啟 Google Maps
+function openGoogleMaps(query) {
+  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  window.open(url, "_blank");
+}
+
 export default function SpotCard({ spot, index }) {
   const Icon = iconMap[spot.icon] || FaMapMarkerAlt;
   const colorClass = typeColors[spot.type] || "bg-gray-100 text-gray-700 border-gray-200";
@@ -42,56 +49,67 @@ export default function SpotCard({ spot, index }) {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      className={`relative border rounded-xl p-3 ${colorClass} shadow-sm`}
+      className={`relative border-2 rounded-2xl p-4 ${colorClass} shadow-sm`}
     >
       {/* Timeline connector */}
       {index > 0 && (
-        <div className="absolute -top-3 left-6 w-0.5 h-3 bg-gray-300" />
+        <div className="absolute -top-3 left-8 w-1 h-3 bg-gray-300" />
       )}
 
-      <div className="flex gap-3">
+      <div className="flex gap-4">
         {/* Icon */}
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
-          <Icon className="text-lg" />
+        <div className="flex-shrink-0 w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
+          <Icon className="text-2xl" />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <h4 className="font-bold text-sm leading-tight">{spot.name}</h4>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h4 className="font-bold text-lg leading-tight">{spot.name}</h4>
             {spot.time && (
-              <span className="flex-shrink-0 flex items-center gap-1 text-xs bg-white/60 px-2 py-0.5 rounded-full">
-                <FaClock className="text-[10px]" />
+              <span className="flex-shrink-0 flex items-center gap-1 text-base bg-white/60 px-3 py-1 rounded-full font-medium">
+                <FaClock className="text-sm" />
                 {spot.time}
               </span>
             )}
           </div>
 
           {spot.location && (
-            <p className="text-xs mt-1 flex items-center gap-1 opacity-80">
-              <FaMapMarkerAlt className="text-[10px] flex-shrink-0" />
-              <span className="truncate">{spot.location}</span>
+            <p className="text-base mt-2 flex items-center gap-2 opacity-80">
+              <FaMapMarkerAlt className="text-sm flex-shrink-0" />
+              <span>{spot.location}</span>
             </p>
           )}
 
           {spot.description && (
-            <p className="text-xs mt-1.5 leading-relaxed opacity-90">
+            <p className="text-base mt-2 leading-relaxed opacity-90">
               {spot.description}
             </p>
           )}
 
           {spot.walkInfo && (
-            <p className="text-xs mt-1.5 flex items-start gap-1 text-gray-600">
-              <FaWalking className="text-[10px] flex-shrink-0 mt-0.5" />
+            <p className="text-base mt-3 flex items-start gap-2 text-gray-600 bg-white/50 p-2 rounded-lg">
+              <FaWalking className="text-sm flex-shrink-0 mt-1" />
               <span>{spot.walkInfo}</span>
             </p>
           )}
 
           {spot.alternative && (
-            <p className="text-xs mt-1.5 flex items-start gap-1 text-orange-600 bg-orange-50 p-1.5 rounded">
-              <FaInfoCircle className="text-[10px] flex-shrink-0 mt-0.5" />
+            <p className="text-base mt-3 flex items-start gap-2 text-orange-600 bg-orange-50 p-3 rounded-xl">
+              <FaInfoCircle className="text-sm flex-shrink-0 mt-1" />
               <span>{spot.alternative}</span>
             </p>
+          )}
+
+          {/* Google Maps 按鈕 */}
+          {spot.mapQuery && (
+            <button
+              onClick={() => openGoogleMaps(spot.mapQuery)}
+              className="mt-4 w-full flex items-center justify-center gap-2 py-3 px-4 bg-white hover:bg-gray-50 border-2 border-current rounded-xl font-bold text-base transition-colors active:scale-95"
+            >
+              <FaMapMarked className="text-lg" />
+              開啟 Google 地圖
+            </button>
           )}
         </div>
       </div>

@@ -8,19 +8,19 @@ export default function FoodList({ foods }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="mt-3 bg-red-50 rounded-lg p-3 border border-red-100"
+      className="mt-4 bg-red-50 rounded-xl p-4 border border-red-100"
     >
-      <h4 className="text-sm font-bold text-red-700 flex items-center gap-2 mb-2">
+      <h4 className="text-base font-bold text-red-700 flex items-center gap-2 mb-3">
         <FaUtensils />
         推薦美食
       </h4>
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {foods.map((food, i) => (
-          <div key={i} className="text-xs flex items-start gap-2">
+          <div key={i} className="text-sm flex items-start gap-2">
             <span className="font-medium text-red-600">{food.name}</span>
             {food.location && (
               <span className="text-gray-500 flex items-center gap-1">
-                <FaMapMarkerAlt className="text-[10px]" />
+                <FaMapMarkerAlt className="text-xs" />
                 {food.location}
               </span>
             )}

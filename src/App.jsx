@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Header from "./components/Header";
+import DaySelector from "./components/DaySelector";
 import DayCard from "./components/DayCard";
 import BottomNav from "./components/BottomNav";
 import NoteModal from "./components/NoteModal";
@@ -11,14 +12,13 @@ import { useNotes } from "./hooks/useNotes";
 
 function App() {
   const [activeTab, setActiveTab] = useState("itinerary");
-  const [expandedDay, setExpandedDay] = useState(1);
+  const [selectedDay, setSelectedDay] = useState(1);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
 
   const { notes, loading, error, submitting, addNote, deleteNote } = useNotes();
 
-  const handleToggleDay = (dayNum) => {
-    setExpandedDay(expandedDay === dayNum ? null : dayNum);
-  };
+  // 取得當前選擇的日期行程
+  const currentDay = itinerary.find((d) => d.day === selectedDay);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -29,19 +29,32 @@ function App() {
           {activeTab === "itinerary" && (
             <motion.div
               key="itinerary"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="space-y-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              {itinerary.map((day) => (
-                <DayCard
-                  key={day.day}
-                  day={day}
-                  isExpanded={expandedDay === day.day}
-                  onToggle={() => handleToggleDay(day.day)}
-                />
-              ))}
+              {/* 日期選擇器 */}
+              <DaySelector
+                selectedDay={selectedDay}
+                onSelectDay={setSelectedDay}
+              />
+
+              {/* 當天行程 */}
+              <div className="mt-4">
+                <AnimatePresence mode="wait">
+                  {currentDay && (
+                    <motion.div
+                      key={currentDay.day}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <DayCard day={currentDay} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           )}
 
@@ -53,7 +66,7 @@ function App() {
               exit={{ opacity: 0, x: 20 }}
             >
               <div className="bg-white rounded-2xl shadow-md p-4">
-                <h2 className="text-lg font-bold mb-4 text-gray-800">
+                <h2 className="text-xl font-bold mb-4 text-gray-800">
                   我的備註
                 </h2>
                 {error && (
