@@ -1,149 +1,81 @@
-import { useState, useEffect, useCallback } from "react";
-
-const API_URL = "https://script.google.com/macros/s/AKfycbyYp85E6OuxSRvFbkwVBySAtlY07ac7p59Sb7eml4b1WalzcAeHvhBfE7qrR8Jsz4SD/exec";
-
-// 轉換 API 資料格式到前端格式
-// API 格式: { timestamp, name, note, tripId }
-// 前端格式: { id, name, content, dayId, timestamp }
-function transformNote(apiNote) {
-  return {
-    id: apiNote.timestamp?.toString() || Date.now().toString(),
-    name: apiNote.name || "",
-    content: apiNote.note || "",
-    dayId: apiNote.tripId || null,
-    timestamp: apiNote.timestamp,
-  };
-}
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchNotes, addNote, deleteNote } from "../api";
 
 export function useNotes() {
-  const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Fetch notes from Google Sheet
-  const fetchNotes = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error("Failed to fetch notes");
-      const data = await response.json();
-      const transformedNotes = Array.isArray(data)
-        ? data.map(transformNote).filter((note) => note.content) // 過濾掉空白備註
-        : [];
-      setNotes(transformedNotes);
-    } catch (err) {
-      console.error("Error fetching notes:", err);
-      setError(err.message);
-      setNotes([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // GET - 使用 useQuery
+  const {
+    data: notes = [],
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ["notes"],
+    queryFn: fetchNotes,
+    staleTime: 30000, // 30秒內不重新請求
+  });
 
-  // Add a new note
-  const addNote = useCallback(async (noteData) => {
-    // 驗證必填欄位
-    if (!noteData.content || !noteData.content.trim()) {
-      setError("備註內容不能為空");
-      return false;
-    }
+  // POST - 使用 useMutation
+  const addNoteMutation = useMutation({
+    mutationFn: addNote,
+    onMutate: async (newNote) => {
+      // 樂觀更新
+      await queryClient.cancelQueries({ queryKey: ["notes"] });
+      const previousNotes = queryClient.getQueryData(["notes"]);
 
-    try {
-      setSubmitting(true);
-      setError(null);
-
-      // 轉換為 API 格式: { name, note, tripId }
-      const apiData = {
-        name: noteData.name || "",
-        note: noteData.content.trim(),
-        tripId: noteData.dayId || "",
-      };
-
-      await fetch(API_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "application/json",
+      queryClient.setQueryData(["notes"], (old = []) => [
+        {
+          id: Date.now().toString(),
+          name: newNote.name || "",
+          content: newNote.content,
+          dayId: newNote.dayId || null,
+          timestamp: Date.now(),
         },
-        body: JSON.stringify(apiData),
-      });
+        ...old,
+      ]);
 
-      // Since no-cors returns opaque response, we optimistically update
-      const newNote = {
-        id: Date.now().toString(),
-        name: noteData.name || "",
-        content: noteData.content.trim(),
-        dayId: noteData.dayId || null,
-        timestamp: Date.now(),
-      };
-      setNotes((prev) => [newNote, ...prev]);
+      return { previousNotes };
+    },
+    onError: (err, newNote, context) => {
+      queryClient.setQueryData(["notes"], context.previousNotes);
+    },
+    onSettled: () => {
+      // 2秒後重新同步資料
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["notes"] });
+      }, 2000);
+    },
+  });
 
-      // Refresh after a short delay to sync with server
-      setTimeout(fetchNotes, 2000);
+  // DELETE - 使用 useMutation
+  const deleteNoteMutation = useMutation({
+    mutationFn: deleteNote,
+    onMutate: async (noteId) => {
+      await queryClient.cancelQueries({ queryKey: ["notes"] });
+      const previousNotes = queryClient.getQueryData(["notes"]);
 
-      return true;
-    } catch (err) {
-      console.error("Error adding note:", err);
-      setError(err.message);
-      return false;
-    } finally {
-      setSubmitting(false);
-    }
-  }, [fetchNotes]);
+      queryClient.setQueryData(["notes"], (old = []) =>
+        old.filter((note) => note.id !== noteId)
+      );
 
-  // Delete a note (根據 timestamp 刪除)
-  const deleteNote = useCallback(async (noteId) => {
-    if (!noteId) return false;
-
-    try {
-      setSubmitting(true);
-      setError(null);
-
-      // 先從本地移除
-      setNotes((prev) => prev.filter((note) => note.id !== noteId));
-
-      // 發送刪除請求到 API
-      await fetch(API_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "delete",
-          timestamp: noteId,
-        }),
-      });
-
-      // Refresh after a short delay
-      setTimeout(fetchNotes, 2000);
-
-      return true;
-    } catch (err) {
-      console.error("Error deleting note:", err);
-      setError(err.message);
-      // 如果失敗，重新載入資料
-      fetchNotes();
-      return false;
-    } finally {
-      setSubmitting(false);
-    }
-  }, [fetchNotes]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes]);
+      return { previousNotes };
+    },
+    onError: (err, noteId, context) => {
+      queryClient.setQueryData(["notes"], context.previousNotes);
+    },
+    onSettled: () => {
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["notes"] });
+      }, 2000);
+    },
+  });
 
   return {
     notes,
     loading,
-    error,
-    submitting,
-    addNote,
-    deleteNote,
-    refreshNotes: fetchNotes,
+    error: error?.message || null,
+    submitting: addNoteMutation.isPending || deleteNoteMutation.isPending,
+    addNote: (noteData) => addNoteMutation.mutateAsync(noteData),
+    deleteNote: (noteId) => deleteNoteMutation.mutateAsync(noteId),
   };
 }

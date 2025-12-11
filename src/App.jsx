@@ -5,20 +5,38 @@ import DaySelector from "./components/DaySelector";
 import DayCard from "./components/DayCard";
 import BottomNav from "./components/BottomNav";
 import NoteModal from "./components/NoteModal";
-import NotesList from "./components/NotesList";
+import ShoppingModal from "./components/ShoppingModal";
+import ToolsPage from "./components/ToolsPage";
 import MetroInfo from "./components/MetroInfo";
 import { itinerary } from "./data/itinerary";
 import { useNotes } from "./hooks/useNotes";
+import { useShoppingList } from "./hooks/useShoppingList";
 
 function App() {
   const [activeTab, setActiveTab] = useState("itinerary");
   const [selectedDay, setSelectedDay] = useState(1);
+  const [toolsSubTab, setToolsSubTab] = useState("notes"); // notes, currency, shopping
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
 
-  const { notes, loading, error, submitting, addNote, deleteNote } = useNotes();
+  const { addNote, submitting: noteSubmitting } = useNotes();
+  const { addItem, submitting: shoppingSubmitting } = useShoppingList();
 
   // 取得當前選擇的日期行程
   const currentDay = itinerary.find((d) => d.day === selectedDay);
+
+  // 處理 + 按鈕點擊
+  const handleAddClick = () => {
+    if (toolsSubTab === "notes") {
+      setIsNoteModalOpen(true);
+    } else if (toolsSubTab === "shopping") {
+      setIsShoppingModalOpen(true);
+    }
+  };
+
+  // 判斷是否顯示 + 按鈕 (只在小工具頁面的備註或購物清單 tab 顯示)
+  const showAddButton =
+    activeTab === "tools" && (toolsSubTab === "notes" || toolsSubTab === "shopping");
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -58,29 +76,17 @@ function App() {
             </motion.div>
           )}
 
-          {activeTab === "notes" && (
+          {activeTab === "tools" && (
             <motion.div
-              key="notes"
+              key="tools"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
             >
-              <div className="bg-white rounded-2xl shadow-md p-4">
-                <h2 className="text-xl font-bold mb-4 text-gray-800">
-                  我的備註
-                </h2>
-                {error && (
-                  <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-                    {error}
-                  </div>
-                )}
-                <NotesList
-                  notes={notes}
-                  loading={loading}
-                  onDelete={deleteNote}
-                  submitting={submitting}
-                />
-              </div>
+              <ToolsPage
+                activeSubTab={toolsSubTab}
+                onSubTabChange={setToolsSubTab}
+              />
             </motion.div>
           )}
 
@@ -100,14 +106,24 @@ function App() {
       <BottomNav
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        onAddNote={() => setIsNoteModalOpen(true)}
+        onAddClick={handleAddClick}
+        showAddButton={showAddButton}
       />
 
+      {/* 備註 Modal */}
       <NoteModal
         isOpen={isNoteModalOpen}
         onClose={() => setIsNoteModalOpen(false)}
         onSave={addNote}
-        submitting={submitting}
+        submitting={noteSubmitting}
+      />
+
+      {/* 購物清單 Modal */}
+      <ShoppingModal
+        isOpen={isShoppingModalOpen}
+        onClose={() => setIsShoppingModalOpen(false)}
+        onSave={addItem}
+        submitting={shoppingSubmitting}
       />
     </div>
   );

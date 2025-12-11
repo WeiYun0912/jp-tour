@@ -1,13 +1,13 @@
 import { motion } from "framer-motion";
-import { FaRoute, FaStickyNote, FaSubway, FaPlus } from "react-icons/fa";
+import { FaRoute, FaTools, FaSubway, FaPlus } from "react-icons/fa";
 
 const tabs = [
   { id: "itinerary", label: "行程", icon: FaRoute },
-  { id: "notes", label: "備註", icon: FaStickyNote },
+  { id: "tools", label: "小工具", icon: FaTools },
   { id: "metro", label: "地鐵", icon: FaSubway },
 ];
 
-export default function BottomNav({ activeTab, onTabChange, onAddNote }) {
+export default function BottomNav({ activeTab, onTabChange, onAddClick, showAddButton }) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
@@ -35,13 +35,18 @@ export default function BottomNav({ activeTab, onTabChange, onAddNote }) {
           );
         })}
 
-        {/* Add Note FAB */}
-        <button
-          onClick={onAddNote}
-          className="absolute -top-6 right-4 w-14 h-14 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full shadow-lg flex items-center justify-center text-white hover:shadow-xl transition-shadow active:scale-95"
-        >
-          <FaPlus className="text-xl" />
-        </button>
+        {/* Add FAB - 只在小工具頁面顯示，位置上移避免擋住地鐵按鈕 */}
+        {showAddButton && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            onClick={onAddClick}
+            className="absolute -top-16 right-4 w-14 h-14 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full shadow-lg flex items-center justify-center text-white hover:shadow-xl transition-shadow active:scale-95"
+          >
+            <FaPlus className="text-xl" />
+          </motion.button>
+        )}
       </div>
     </nav>
   );

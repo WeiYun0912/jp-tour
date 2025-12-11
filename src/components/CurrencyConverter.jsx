@@ -1,73 +1,45 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { FaExchangeAlt, FaYenSign, FaDollarSign, FaSyncAlt } from "react-icons/fa";
-
-// 使用免費的匯率 API
-const RATE_API = "https://api.exchangerate-api.com/v4/latest/JPY";
+import {
+  FaExchangeAlt,
+  FaYenSign,
+  FaDollarSign,
+  FaSyncAlt,
+} from "react-icons/fa";
+import { useExchangeRate } from "../hooks/useExchangeRate";
 
 export default function CurrencyConverter() {
-  const [rate, setRate] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [lastUpdate, setLastUpdate] = useState(null);
+  const { rate, loading, error } = useExchangeRate();
 
   // 輸入值
   const [jpyAmount, setJpyAmount] = useState("");
   const [twdAmount, setTwdAmount] = useState("");
-  const [direction, setDirection] = useState("jpy-to-twd"); // jpy-to-twd 或 twd-to-jpy
-
-  // 取得匯率
-  const fetchRate = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await fetch(RATE_API);
-      if (!response.ok) throw new Error("無法取得匯率");
-      const data = await response.json();
-      // JPY to TWD 匯率
-      const jpyToTwd = data.rates.TWD;
-      setRate(jpyToTwd);
-      setLastUpdate(new Date().toLocaleString("zh-TW"));
-    } catch (err) {
-      console.error("Error fetching rate:", err);
-      setError("無法取得匯率，請稍後再試");
-      // 使用備用匯率（約略值）
-      setRate(0.22);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchRate();
-  }, [fetchRate]);
 
   // 處理日幣輸入
   const handleJpyChange = (value) => {
     setJpyAmount(value);
     if (value && rate) {
-      const twd = (parseFloat(value) * rate).toFixed(0);
+      const twd = (parseFloat(value) * rate.jpyToTwd).toFixed(0);
       setTwdAmount(twd);
     } else {
       setTwdAmount("");
     }
-    setDirection("jpy-to-twd");
   };
 
   // 處理台幣輸入
   const handleTwdChange = (value) => {
     setTwdAmount(value);
     if (value && rate) {
-      const jpy = (parseFloat(value) / rate).toFixed(0);
+      const jpy = (parseFloat(value) * rate.twdToJpy).toFixed(0);
       setJpyAmount(jpy);
     } else {
       setJpyAmount("");
     }
-    setDirection("twd-to-jpy");
   };
 
   // 快速金額按鈕
-  const quickAmounts = [100, 500, 1000, 5000, 10000];
+  const quickJpyAmounts = [100, 500, 1000, 5000, 10000];
+  const quickTwdAmounts = [50, 100, 500, 1000, 2000];
 
   return (
     <motion.div
@@ -82,24 +54,22 @@ export default function CurrencyConverter() {
             <FaExchangeAlt />
             匯率換算
           </h2>
-          <button
-            onClick={fetchRate}
-            disabled={loading}
-            className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
-          >
-            <FaSyncAlt className={loading ? "animate-spin" : ""} />
-          </button>
+          {loading && (
+            <div className="p-2 bg-white/20 rounded-full">
+              <FaSyncAlt className="animate-spin" />
+            </div>
+          )}
         </div>
 
         {error ? (
-          <p className="text-sm opacity-80">{error}</p>
+          <p className="text-base opacity-80">{error}</p>
         ) : (
           <div className="text-center">
             <p className="text-3xl font-bold mb-1">
-              1 JPY = {rate ? rate.toFixed(4) : "---"} TWD
+              1 JPY = {rate ? rate.jpyToTwd.toFixed(4) : "---"} TWD
             </p>
-            <p className="text-sm opacity-80">
-              {lastUpdate ? `更新時間：${lastUpdate}` : "載入中..."}
+            <p className="text-base opacity-80">
+              {rate?.lastUpdate ? `更新日期：${rate.lastUpdate}` : "載入中..."}
             </p>
           </div>
         )}
@@ -109,7 +79,7 @@ export default function CurrencyConverter() {
       <div className="bg-white rounded-2xl shadow-md p-5">
         {/* 日幣輸入 */}
         <div className="mb-4">
-          <label className="block text-lg font-bold text-gray-700 mb-2 flex items-center gap-2">
+          <label className="block text-xl font-bold text-gray-700 mb-2 flex items-center gap-2">
             <FaYenSign className="text-red-500" />
             日幣 (JPY)
           </label>
@@ -123,11 +93,11 @@ export default function CurrencyConverter() {
           />
           {/* 快速金額 */}
           <div className="flex flex-wrap gap-2 mt-3">
-            {quickAmounts.map((amount) => (
+            {quickJpyAmounts.map((amount) => (
               <button
                 key={amount}
                 onClick={() => handleJpyChange(amount.toString())}
-                className="px-4 py-2 text-base bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors font-medium"
+                className="px-4 py-3 text-lg bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors font-bold"
               >
                 ¥{amount.toLocaleString()}
               </button>
@@ -137,14 +107,14 @@ export default function CurrencyConverter() {
 
         {/* 轉換箭頭 */}
         <div className="flex justify-center my-4">
-          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-            <FaExchangeAlt className="text-xl text-gray-500 rotate-90" />
+          <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center">
+            <FaExchangeAlt className="text-2xl text-gray-500 rotate-90" />
           </div>
         </div>
 
         {/* 台幣輸入 */}
         <div>
-          <label className="block text-lg font-bold text-gray-700 mb-2 flex items-center gap-2">
+          <label className="block text-xl font-bold text-gray-700 mb-2 flex items-center gap-2">
             <FaDollarSign className="text-green-500" />
             台幣 (TWD)
           </label>
@@ -158,11 +128,11 @@ export default function CurrencyConverter() {
           />
           {/* 快速金額 */}
           <div className="flex flex-wrap gap-2 mt-3">
-            {[50, 100, 500, 1000, 2000].map((amount) => (
+            {quickTwdAmounts.map((amount) => (
               <button
                 key={amount}
                 onClick={() => handleTwdChange(amount.toString())}
-                className="px-4 py-2 text-base bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors font-medium"
+                className="px-4 py-3 text-lg bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors font-bold"
               >
                 ${amount.toLocaleString()}
               </button>
@@ -173,7 +143,7 @@ export default function CurrencyConverter() {
 
       {/* 常用金額參考 */}
       <div className="bg-white rounded-2xl shadow-md p-5">
-        <h3 className="text-lg font-bold text-gray-700 mb-4">常用金額參考</h3>
+        <h3 className="text-xl font-bold text-gray-700 mb-4">常用金額參考</h3>
         <div className="space-y-3">
           {[
             { jpy: 100, desc: "飲料、小點心" },
@@ -184,16 +154,19 @@ export default function CurrencyConverter() {
           ].map((item) => (
             <div
               key={item.jpy}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
+              className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
             >
               <div>
-                <span className="text-lg font-bold text-red-600">
+                <span className="text-xl font-bold text-red-600">
                   ¥{item.jpy.toLocaleString()}
                 </span>
-                <span className="text-base text-gray-500 ml-2">{item.desc}</span>
+                <span className="text-lg text-gray-500 ml-2">{item.desc}</span>
               </div>
-              <span className="text-lg font-bold text-green-600">
-                ≈ ${rate ? Math.round(item.jpy * rate).toLocaleString() : "---"}
+              <span className="text-xl font-bold text-green-600">
+                ≈ $
+                {rate
+                  ? Math.round(item.jpy * rate.jpyToTwd).toLocaleString()
+                  : "---"}
               </span>
             </div>
           ))}
