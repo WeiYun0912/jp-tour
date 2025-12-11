@@ -7,9 +7,9 @@ import ShoppingList from "./ShoppingList";
 import { useNotes } from "../hooks/useNotes";
 
 const tabs = [
+  { id: "shopping", label: "購物", icon: FaShoppingCart },
   { id: "notes", label: "備註", icon: FaStickyNote },
   { id: "currency", label: "匯率", icon: FaExchangeAlt },
-  { id: "shopping", label: "購物", icon: FaShoppingCart },
 ];
 
 export default function ToolsPage({ activeSubTab, onSubTabChange }) {
@@ -46,6 +46,17 @@ export default function ToolsPage({ activeSubTab, onSubTabChange }) {
 
       {/* Tab 內容 */}
       <AnimatePresence mode="wait">
+        {activeSubTab === "shopping" && (
+          <motion.div
+            key="shopping"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <ShoppingList />
+          </motion.div>
+        )}
+
         {activeSubTab === "notes" && (
           <motion.div
             key="notes"
@@ -78,17 +89,6 @@ export default function ToolsPage({ activeSubTab, onSubTabChange }) {
             exit={{ opacity: 0, y: -10 }}
           >
             <CurrencyConverter />
-          </motion.div>
-        )}
-
-        {activeSubTab === "shopping" && (
-          <motion.div
-            key="shopping"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <ShoppingList />
           </motion.div>
         )}
       </AnimatePresence>

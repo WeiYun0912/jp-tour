@@ -1,5 +1,78 @@
 @import "tailwindcss";
 
+/* 字體大小控制 */
+:root {
+  --font-scale: 1;
+}
+
+.font-size-small {
+  --font-scale: 0.875;
+}
+
+.font-size-medium {
+  --font-scale: 1;
+}
+
+.font-size-large {
+  --font-scale: 1.2;
+}
+
+/* 套用字體縮放到所有文字元素 */
+.font-size-small,
+.font-size-medium,
+.font-size-large {
+  font-size: calc(1rem * var(--font-scale));
+}
+
+.font-size-small *,
+.font-size-medium *,
+.font-size-large * {
+  font-size: inherit;
+}
+
+/* 保留特定大小的元素 (標題等) */
+.font-size-small .text-3xl,
+.font-size-medium .text-3xl,
+.font-size-large .text-3xl {
+  font-size: calc(1.875rem * var(--font-scale));
+}
+
+.font-size-small .text-2xl,
+.font-size-medium .text-2xl,
+.font-size-large .text-2xl {
+  font-size: calc(1.5rem * var(--font-scale));
+}
+
+.font-size-small .text-xl,
+.font-size-medium .text-xl,
+.font-size-large .text-xl {
+  font-size: calc(1.25rem * var(--font-scale));
+}
+
+.font-size-small .text-lg,
+.font-size-medium .text-lg,
+.font-size-large .text-lg {
+  font-size: calc(1.125rem * var(--font-scale));
+}
+
+.font-size-small .text-base,
+.font-size-medium .text-base,
+.font-size-large .text-base {
+  font-size: calc(1rem * var(--font-scale));
+}
+
+.font-size-small .text-sm,
+.font-size-medium .text-sm,
+.font-size-large .text-sm {
+  font-size: calc(0.875rem * var(--font-scale));
+}
+
+.font-size-small .text-xs,
+.font-size-medium .text-xs,
+.font-size-large .text-xs {
+  font-size: calc(0.75rem * var(--font-scale));
+}
+
 /* Custom scrollbar for mobile feel */
 ::-webkit-scrollbar {
   width: 4px;
